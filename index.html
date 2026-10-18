@@ -69,7 +69,7 @@ const save=()=>{try{localStorage.setItem('quizzn.lib',JSON.stringify(lib))}catch
 
 // ---------- overlay: la app de escritorio/móvil nos muestra encima del juego y habla por mensajes ----------
 // app → web: llama overlayBreak() / home(). web → app: "cfg:minutos:esc", "now", "done"
-const host=window.chrome?.webview,tell=m=>host?.postMessage(m);
+const android=!!window.QuizznHost,host=window.chrome?.webview||window.QuizznHost,tell=m=>host?.postMessage(m); // Windows (WebView2) | Android (addJavascriptInterface)
 const ov={min:20,n:3,k:10,esc:true,bank:0};try{Object.assign(ov,JSON.parse(localStorage.getItem('quizzn.ov')))}catch{}
 const saveOv=()=>{try{localStorage.setItem('quizzn.ov',JSON.stringify(ov))}catch{}tell(`cfg:${ov.min}:${ov.esc?1:0}`)};
 let inBreak=0;
@@ -236,8 +236,8 @@ function ovCard(){
  const num=(k,min,max)=>h('input',{type:'number',min,max,value:ov[k],onchange:e=>{ov[k]=Math.min(max,Math.max(min,Math.round(+e.target.value)||min));e.target.value=ov[k];saveOv()}});
  return h('div',{class:'card'},h('b',{},'🎮 Pausas de estudio'),
   h('div',{class:'grid2'},h('span',{},'Cada (minutos)'),num('min',1,240),h('span',{},'Aciertos para volver'),num('n',1,20),h('span',{},'Aciertos para ganar un salto'),num('k',1,100)),
-  h('label',{},h('input',{type:'checkbox',checked:ov.esc,onchange:e=>{ov.esc=e.target.checked;saveOv()}}),' Mandar Esc al juego para pausarlo'),
-  h('p',{class:'mut'},`Usa preguntas de todos tus quizzes. Atajo: Ctrl+Alt+Q. Salto: ${Math.min(ov.bank,ov.k)}/${ov.k} aciertos.`),
+  android?'':h('label',{},h('input',{type:'checkbox',checked:ov.esc,onchange:e=>{ov.esc=e.target.checked;saveOv()}}),' Mandar Esc al juego para pausarlo'),
+  h('p',{class:'mut'},`Usa preguntas de todos tus quizzes. ${android?'':'Atajo: Ctrl+Alt+Q. '}Salto: ${Math.min(ov.bank,ov.k)}/${ov.k} aciertos.`),
   btn('Probar ahora',()=>tell('now')))}
 
 async function share(qz){
