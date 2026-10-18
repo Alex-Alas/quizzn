@@ -11,7 +11,7 @@ Estado: **construido y probado en navegador**. Código: [index.html](index.html)
 | 3 | Compartir = el quiz viaja comprimido (deflate + base64url) dentro del `#hash` del link; alternativa: archivo `.quizzn.json` | Cero backend. Límite: con imágenes el link se vuelve largo (aviso a partir de ~6 KB) |
 | 4 | Imágenes: se reducen a 640 px JPEG y se incrustan en el quiz | Un quiz es un solo archivo/link, sin hosting de imágenes |
 | 5 | IA: botón "Copiar prompt para IA" + Importar JSON | Cubre la feature 1 de la idea sin atar a un proveedor; MCP/API directa va después |
-| 6 | Publicación: repo público `Alex-Alas/quizzn` + GitHub Pages (`https://alex-alas.github.io/quizzn/`) | Elegido por Alex en la sesión anterior; falta ejecutarlo |
+| 6 | Publicación: repo público `Alex-Alas/quizzn` + GitHub Pages (`https://alex-alas.github.io/quizzn/`) | **Publicado** el 2026-10-18; cada `git push` a `main` actualiza la web en ~1 min |
 
 ## Formatos de pregunta (14) vs. Wayground
 
@@ -42,5 +42,5 @@ Todos admiten imagen y explicación. **No** están (no básicos o fase 2): Math 
 
 ## Pendiente
 
-- Publicar en GitHub Pages para que el link funcione con otras personas.
+- Probar el link desde un teléfono real con un quiz que tenga fotos.
 - Probar con tu hermano/compañeros y anotar qué formato falta o estorba.

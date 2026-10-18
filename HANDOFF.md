@@ -28,12 +28,12 @@ Alex pidió además modo `ponytail` (la solución más simple que funcione): sin
 
 **Pendiente / bloqueado:**
 
-- **Publicación.** Alex eligió "repo `quizzn` público + GitHub Pages". La integración de la sesión en la nube no pudo crear el repo (403 en `POST /user/repos`). Mientras no esté publicada, el link de compartir solo funciona si la app se sirve desde una web; abierta como `file://` solo sirve el archivo `.json`. Desde tu máquina: `gh repo create Alex-Alas/quizzn --public`, subir `index.html` en la raíz y activar Pages (rama `main`, carpeta raíz).
+- **Publicado** (2026-10-18): https://alex-alas.github.io/quizzn/ — repo público `Alex-Alas/quizzn`, Pages desde `main` raíz. Cada push a `main` redeploya.
 - Dos decisiones siguen sin confirmar por Alex (ver `mvp.md`): web primero y overlay después, y el esquema de compartir por `#hash`.
 
 ## Siguiente paso sugerido
 
-1. Crear el repo público y publicar en Pages (`https://alex-alas.github.io/quizzn/`); probar el link de compartir desde un teléfono real con las imágenes del quiz.
+1. Probar el link de compartir desde un teléfono real con las imágenes del quiz.
 2. Que Alex lo use con su hermano y compañeros y anote qué formato falta o estorba. Candidatos ya identificados, sin hacer: arrastrar y soltar con el dedo (hoy ordenar usa ↑↓ y relacionar/categorizar usan desplegables), etiquetar imagen con varios puntos, tiempo por pregunta, audio/video, modo en vivo.
 3. Cuando el MVP web esté validado, sesión de decisiones (una pregunta a la vez, con opciones y trade-offs) para el overlay: plataforma objetivo, cómo se pausa un juego de forma fiable por SO (juegos online/anti-cheat), disparador de interrupciones, licencia. Preguntas abiertas completas en `idea.md`.
 4. Documentar cada decisión en `.md` y planear qué se graba en video desde el día 0.
