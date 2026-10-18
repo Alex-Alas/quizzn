@@ -67,6 +67,13 @@ const copy=async t=>{try{await navigator.clipboard.writeText(t);return 1}catch{c
 let lib=[];try{lib=JSON.parse(localStorage.getItem('quizzn.lib'))||[]}catch{}
 const save=()=>{try{localStorage.setItem('quizzn.lib',JSON.stringify(lib))}catch{toast('No se pudo guardar: memoria llena (¿muchas imágenes?)')}};
 
+// ---------- overlay: la app de escritorio/móvil nos muestra encima del juego y habla por mensajes ----------
+// app → web: llama overlayBreak() / home(). web → app: "cfg:minutos:esc", "now", "done"
+const host=window.chrome?.webview,tell=m=>host?.postMessage(m);
+const ov={min:20,n:3,k:10,esc:true,bank:0};try{Object.assign(ov,JSON.parse(localStorage.getItem('quizzn.ov')))}catch{}
+const saveOv=()=>{try{localStorage.setItem('quizzn.ov',JSON.stringify(ov))}catch{}tell(`cfg:${ov.min}:${ov.esc?1:0}`)};
+let inBreak=0;
+
 // ---------- compartir: el quiz viaja comprimido en el #hash del link (sin servidor) ----------
 const pack=async o=>{const s=new Blob([JSON.stringify(o)]).stream().pipeThrough(new CompressionStream('deflate-raw'));const u=new Uint8Array(await new Response(s).arrayBuffer());let b='';for(let i=0;i<u.length;i+=0x8000)b+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(b).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')};
 const unpack=async t=>{const u=Uint8Array.from(atob(t.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));return JSON.parse(await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text())};
@@ -166,13 +173,14 @@ const SAMPLE={title:'Demo: todos los formatos',qs:[
 // ---------- pantallas ----------
 const app=$('#app');
 const show=(...n)=>{app.replaceChildren(...n);scrollTo(0,0)};
-const hdr=(...x)=>h('div',{class:'top'},h('button',{class:'brand',onclick:home},"Quizz'n"),h('div',{class:'btns'},x));
+const hdr=(...x)=>h('div',{class:'top'},h('button',{class:'brand',onclick:()=>inBreak||home()},"Quizz'n"),h('div',{class:'btns'},x));
 const add=qz=>{lib.unshift(qz);save();return qz};
 
 function home(){
  show(hdr(),h('h2',{},'Mis quizzes'),
   lib.length?h('div',{class:'cards'},lib.map(qz=>h('div',{class:'card'},h('b',{},qz.title),h('small',{},qz.qs.length+' preguntas'),h('div',{class:'btns'},btn('▶ Jugar',()=>play(qz),'','primary'),btn('✎ Editar',()=>edit(qz)),btn('🔗 Compartir',()=>share(qz)),btn('🗑',()=>{if(confirm('¿Borrar "'+qz.title+'"?')){lib=lib.filter(x=>x!==qz);save();home()}},'Borrar'))))):h('p',{class:'mut'},'Aún no tienes quizzes. Crea uno, importa uno que te compartieron o prueba el ejemplo.'),
-  h('div',{class:'btns'},btn('+ Nuevo quiz',()=>edit(add({id:uid(),title:'Nuevo quiz',qs:[Object.assign({t:'mc',q:'',img:'',exp:'',ar:1},T.mc.blank())]})),'','primary'),btn('⇪ Importar',importView),btn('Cargar ejemplo',()=>{add(clean(SAMPLE));home()}),btn('🤖 Copiar prompt para IA',async()=>{(await copy(AI_PROMPT))?toast('Prompt copiado: pégalo en tu IA y luego usa Importar'):prompt('Copia esto:',AI_PROMPT)})))}
+  h('div',{class:'btns'},btn('+ Nuevo quiz',()=>edit(add({id:uid(),title:'Nuevo quiz',qs:[Object.assign({t:'mc',q:'',img:'',exp:'',ar:1},T.mc.blank())]})),'','primary'),btn('⇪ Importar',importView),btn('Cargar ejemplo',()=>{add(clean(SAMPLE));home()}),btn('🤖 Copiar prompt para IA',async()=>{(await copy(AI_PROMPT))?toast('Prompt copiado: pégalo en tu IA y luego usa Importar'):prompt('Copia esto:',AI_PROMPT)})),
+  host?ovCard():'')}
 
 function importView(){
  const ta=h('textarea',{rows:8,placeholder:'Pega aquí el JSON o un link de Quizz\'n…'});
@@ -202,19 +210,35 @@ function play(qz,from){
   const main=btn(p?'Comprobar':'Continuar',()=>{
    if(!p||main.dataset.done){i++;return step()}
    const a=p.get(),s=t.grade(q,a);res.push({q,s});
+   if(qz.more){if(s===1)ov.bank++;else qs.push(qz.more());saveOv()} // pausa: cada fallo agrega otra pregunta
    p.el.classList.add('locked');p.el.querySelectorAll('input,select,textarea,button').forEach(x=>x.disabled=true);p.reveal&&p.reveal();
    const k=s!==1&&t.key&&t.key(q);
    fb.replaceChildren(h('b',{class:s==null?'':s===1?'ok':s===0?'bad':'part'},s==null?'Respuesta registrada':s===1?'¡Correcto!':s===0?'Incorrecto':'Parcial · '+Math.round(s*100)+'%'),k?h('div',{},k):'',q.exp?h('div',{class:'mut'},q.exp):'');
    main.dataset.done=1;main.textContent=i+1<qs.length?'Siguiente →':'Ver resultados';
   },'','primary');
-  show(hdr(),h('div',{class:'bar'},h('i',{style:`width:${100*i/qs.length}%`})),h('small',{},`${i+1} / ${qs.length}`),
+  show(hdr(qz.more?ov.bank>=ov.k?btn('⏭ Saltar',()=>{ov.bank-=ov.k;saveOv();breakDone()}):h('small',{},`Salto en ${ov.k-ov.bank} aciertos`):''),h('div',{class:'bar'},h('i',{style:`width:${100*i/qs.length}%`})),h('small',{},qz.more?`Aciertos ${res.filter(r=>r.s===1).length} / ${qz.need}`:`${i+1} / ${qs.length}`),
    h('div',{class:'card'},h('h2',{},q.q),q.img&&!t.own?h('img',{class:'qimg',src:q.img}):'',p?p.el:'',fb),main)};
  const end=()=>{
+  if(qz.more)return show(hdr(),h('div',{class:'card'},h('h2',{},'¡Listo! 🎉'),h('p',{},`Acertaste ${qz.need}. A seguir jugando.`)),btn('🎮 Volver al juego',breakDone,'','primary'));
   const sc=res.filter(r=>r.s!=null),tot=sc.reduce((a,r)=>a+r.s,0);
   show(hdr(),h('div',{class:'card'},h('h2',{},sc.length?`${+tot.toFixed(1)} / ${sc.length}`:'¡Listo!'),sc.length?h('p',{},Math.round(100*tot/sc.length)+'% de aciertos'):'',
    res.map(r=>h('div',{class:'res'},r.s==null?'•':r.s===1?'✅':r.s===0?'❌':'◐',h('span',{},r.q.q)))),
    h('div',{class:'btns'},btn('↻ Repetir',()=>play(qz,from),'','primary'),from==='link'?btn('Guardar en mis quizzes',()=>{add(qz);toast('Guardado');home()}):'',btn('Inicio',home)))};
  step()}
+
+// pausa de estudio: hay que acertar ov.n preguntas al azar de toda la biblioteca; cada ov.k aciertos ganan un salto
+function overlayBreak(){
+ inBreak=1;const pool=lib.flatMap(qz=>qz.qs).filter(q=>!['info','poll','open','draw'].includes(q.t)),pick=()=>pool[Math.random()*pool.length|0];
+ if(!pool.length)return show(hdr(),h('div',{class:'card'},h('h2',{},'Sin preguntas'),h('p',{},'Crea o importa un quiz con preguntas calificables para usar las pausas.')),btn('🎮 Volver al juego',breakDone,'','primary'));
+ play({title:'Pausa de estudio',qs:Array.from({length:ov.n},pick),need:ov.n,more:pick})}
+const breakDone=()=>{inBreak=0;tell('done');host||home()};
+function ovCard(){
+ const num=(k,min,max)=>h('input',{type:'number',min,max,value:ov[k],onchange:e=>{ov[k]=Math.min(max,Math.max(min,Math.round(+e.target.value)||min));e.target.value=ov[k];saveOv()}});
+ return h('div',{class:'card'},h('b',{},'🎮 Pausas de estudio'),
+  h('div',{class:'grid2'},h('span',{},'Cada (minutos)'),num('min',1,240),h('span',{},'Aciertos para volver'),num('n',1,20),h('span',{},'Aciertos para ganar un salto'),num('k',1,100)),
+  h('label',{},h('input',{type:'checkbox',checked:ov.esc,onchange:e=>{ov.esc=e.target.checked;saveOv()}}),' Mandar Esc al juego para pausarlo'),
+  h('p',{class:'mut'},`Usa preguntas de todos tus quizzes. Atajo: Ctrl+Alt+Q. Salto: ${Math.min(ov.bank,ov.k)}/${ov.k} aciertos.`),
+  btn('Probar ahora',()=>tell('now')))}
 
 async function share(qz){
  const link=location.href.split('#')[0]+'#q='+await pack({title:qz.title,qs:qz.qs}),kb=Math.round(link.length/1024);
@@ -226,6 +250,8 @@ async function share(qz){
   h('div',{class:'btns'},btn('Copiar link',async()=>toast(await copy(link)?'Link copiado':'Copia el link a mano'),'','primary'),navigator.share?btn('Compartir…',()=>navigator.share({title:qz.title,url:link}).catch(()=>{})):'',btn('⬇ Descargar archivo',file),btn('Volver',home)))}
 
 async function boot(){
+ if(host)saveOv();
+ if(/[?&]overlay/.test(location.search))return overlayBreak(); // probar la pausa en el navegador
  const m=location.hash.match(/^#q=([\w-]+)/);
  if(m)try{const qz=clean(await unpack(m[1]));return show(hdr(),h('div',{class:'card'},h('h2',{},qz.title),h('p',{class:'mut'},qz.qs.length+' preguntas'),h('div',{class:'btns'},btn('▶ Empezar',()=>play(qz,'link'),'','primary'),btn('Guardar en mis quizzes',()=>{add(qz);toast('Guardado');home()}))))}catch{toast('Link inválido o incompleto')}
  home()}
@@ -248,6 +274,11 @@ async function selfTest(){
  const r=await unpack(await pack(SAMPLE));eq(r,SAMPLE,'pack/unpack');
  const c=clean({qs:[{t:'mc',q:'x',opts:['a','b']},{t:'raro'}]});eq(c.qs[0].opts[0].t,'a','clean opts string');eq(c.qs[1].t,'mc','clean tipo desconocido');
  for(const k in T){const q=Object.assign({q:'x',img:'',ar:1},T[k].blank());T[k].edit(q);const p=T[k].play&&T[k].play(q);if(p){const a=p.get();T[k].grade(q,a);p.reveal&&p.reveal()}}
+ // pausa de estudio: fallar agrega otra pregunta, acertar suma al salto, "Volver al juego" la termina
+ const L=lib,O={...ov},B=t=>[...app.querySelectorAll('button')].find(b=>b.textContent.includes(t)),pick=t=>[...app.querySelectorAll('.opt')].find(l=>l.textContent===t).querySelector('input').click();
+ try{lib=[clean({qs:[{t:'mc',q:'x',opts:[{t:'a',ok:true},{t:'b'}]}]})];Object.assign(ov,{n:1,bank:0});
+  overlayBreak();pick('b');B('Comprobar').click();B('Siguiente').click();pick('a');B('Comprobar').click();eq(ov.bank,1,'pausa salto');B('Ver resultados').click();B('Volver al juego').click();eq(inBreak,0,'pausa termina');
+ }finally{lib=L;Object.assign(ov,O);saveOv();home()}
  document.title='TEST OK'}
 if(location.search.includes('test'))selfTest().catch(e=>{document.title='TEST FAIL: '+e.message;console.error(e)});
 boot();

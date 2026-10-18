@@ -29,19 +29,21 @@ Alex pidió además modo `ponytail` (la solución más simple que funcione): sin
 **Pendiente / bloqueado:**
 
 - **Publicado** (2026-10-18): https://alex-alas.github.io/quizzn/ — repo público `Alex-Alas/quizzn`, Pages desde `main` raíz. Cada push a `main` redeploya.
-- Dos decisiones siguen sin confirmar por Alex (ver `mvp.md`): web primero y overlay después, y el esquema de compartir por `#hash`.
+- Confirmado: web primero y overlay después. Sigue sin confirmar el esquema de compartir por `#hash` (ver `mvp.md`).
 
 ## Siguiente paso sugerido
 
 1. Probar el link de compartir desde un teléfono real con las imágenes del quiz.
 2. Que Alex lo use con su hermano y compañeros y anote qué formato falta o estorba. Candidatos ya identificados, sin hacer: arrastrar y soltar con el dedo (hoy ordenar usa ↑↓ y relacionar/categorizar usan desplegables), etiquetar imagen con varios puntos, tiempo por pregunta, audio/video, modo en vivo.
-3. Cuando el MVP web esté validado, sesión de decisiones (una pregunta a la vez, con opciones y trade-offs) para el overlay: plataforma objetivo, cómo se pausa un juego de forma fiable por SO (juegos online/anti-cheat), disparador de interrupciones, licencia. Preguntas abiertas completas en `idea.md`.
+3. **Overlay Windows hecho** (ver `overlay.md`): app C# + WebView2 en `windows/`, pausa cada N min o Ctrl+Alt+Q, Esc al juego, acertar N, salto ganado con aciertos. Sigue: Android (plan en `overlay.md`) y luego licencia/plugins (preguntas abiertas en `idea.md`).
 4. Documentar cada decisión en `.md` y planear qué se graba en video desde el día 0.
 
 ## Archivos
 
 - `index.html` — la app (código de arriba).
 - `mvp.md` — decisiones y alcance del MVP.
+- `overlay.md` — decisiones del overlay sobre juegos (Windows hecho, Android pendiente).
+- `windows/` — app de Windows (C# + WebView2). Zip para repartir: `windows/bin/Quizzn-windows.zip` (no va al repo).
 - `idea.md` — idea original y preguntas abiertas (no está en esta carpeta).
 
 Estructura interna de `index.html`: utilidades (`h`, `btn`, `norm`), compartir (`pack`/`unpack`), tabla de tipos `T` (cada tipo define `blank`, `edit`, `play`, `grade`, `key`), importación (`clean`, `AI_PROMPT`, `SAMPLE`), pantallas (`home`, `edit`, `play`, `share`, `importView`) y `selfTest`. Un tipo nuevo = una entrada en `T`. Ojo: `top` choca con `window.top`, por eso el encabezado se llama `hdr`.
