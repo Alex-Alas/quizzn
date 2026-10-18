@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Quizz'n</title>
+<style>
+:root{color-scheme:dark light;--bg:light-dark(#faf7f2,#14121c);--card:light-dark(#fff,#1f1c2b);--ink:light-dark(#1d1a26,#f3efe6);--mut:light-dark(#6d6880,#a39fb5);--acc:#ffb703;--ok:#2fbf84;--bad:#ff5d73;--line:light-dark(#ddd6c8,#37324a)}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+#app{max-width:720px;margin:0 auto;padding:16px 16px 80px}
+h2{margin:.2em 0 .5em}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.brand{background:none!important;border:0!important;padding:0!important;font-weight:800;font-size:24px;color:var(--acc)}
+button,.btn,select,input,textarea{font:inherit;color:inherit}
+button,.btn{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer;display:inline-block}
+button:disabled{opacity:.5;cursor:default}
+button.primary{background:var(--acc);color:#1b1500;border-color:var(--acc);font-weight:700;padding:12px 18px}
+input:not([type=radio]):not([type=checkbox]):not([type=range]),textarea,select{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px}
+textarea{resize:vertical}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}
+.cards .card{display:flex;flex-direction:column;gap:2px}
+.mut,small{color:var(--mut)}
+.qh{display:flex;align-items:center;gap:6px;margin-bottom:8px}.qh select{flex:1;min-width:0}
+.q>*{margin-top:8px}
+.list{display:grid;gap:6px}.row{display:flex;gap:6px;align-items:center}.row>*{flex:1;min-width:0}.row>input[type=radio],.row>input[type=checkbox],.row>.x{flex:none}
+.add{justify-self:start;border-style:dashed}
+.thumb{max-height:80px;border-radius:8px;vertical-align:middle;margin-right:8px}
+.qimg{max-width:100%;max-height:300px;border-radius:10px;display:block;margin:8px 0}
+.opts{display:grid;gap:8px;margin:10px 0}
+.opt{display:flex;gap:10px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:10px;cursor:pointer}
+.right{border-color:var(--ok)!important;background:color-mix(in srgb,var(--ok) 18%,transparent)!important}.wrong{border-color:var(--bad)!important;background:color-mix(in srgb,var(--bad) 18%,transparent)!important}
+.hole{min-width:72px;border-style:dashed;padding:2px 10px;margin:0 2px;line-height:1.6}.hole.f{border-style:solid;border-color:var(--acc)}
+.bank{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.pin{position:absolute;transform:translate(-50%,-50%);min-width:26px;height:26px;padding:0 6px;border-radius:13px;background:var(--acc);color:#1b1500;font:700 14px/26px system-ui;font-style:normal;text-align:center;box-shadow:0 0 0 2px #fff;pointer-events:none}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center;margin:10px 0}
+.cloze{line-height:2.2;white-space:pre-wrap}.cloze select{width:auto}
+.ord{padding:0;list-style:none;display:grid;gap:6px}.ord li{display:flex;gap:6px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:10px}.ord span{flex:1}
+.hs{position:relative;cursor:crosshair;line-height:0}.hs img{width:100%;border-radius:10px}
+.dot{position:absolute;transform:translate(-50%,-50%);aspect-ratio:1;border:3px solid var(--acc);border-radius:50%;background:#ffb70355;pointer-events:none}
+.dot.pick{width:18px;background:var(--acc)}.dot.ans{border-color:var(--ok);background:#2fbf8455}
+.cv{width:100%;aspect-ratio:3/2;background:#fff center/contain no-repeat;border-radius:10px;border:1px solid var(--line);touch-action:none}
+.locked{pointer-events:none;opacity:.85}
+.fb{margin-top:10px}.fb b.ok{color:var(--ok)}.fb b.bad{color:var(--bad)}.fb b.part{color:var(--acc)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-bottom:6px}.bar i{display:block;height:100%;background:var(--acc)}
+.res{display:flex;gap:8px;padding:4px 0}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;opacity:0;transition:.2s;pointer-events:none;max-width:90vw}#toast.on{opacity:1}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast"></div>
+<script>
+'use strict';
+// ---------- utilidades ----------
+const $=s=>document.querySelector(s);
+const h=(tag,props={},...kids)=>{const e=document.createElement(tag);for(const[k,v]of Object.entries(props)){if(k==='class')e.className=v;else if(/^on/.test(k)||['value','checked','disabled'].includes(k))e[k]=v;else e.setAttribute(k,v)}for(const c of kids.flat(Infinity))e.append(c?.nodeType?c:c==null||c===false?'':String(c));return e};
+const btn=(t,f,title='',cls='')=>h('button',{type:'button',class:cls,title,onclick:f},t);
+const norm=s=>String(s??'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim().replace(/\s+/g,' ');
+const shuf=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+const uid=()=>Math.random().toString(36).slice(2,9);
+let tt;const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),2800)};
+const copy=async t=>{try{await navigator.clipboard.writeText(t);return 1}catch{const a=h('textarea',{value:t});document.body.append(a);a.select();const ok=document.execCommand('copy');a.remove();return ok}};
+
+// ---------- guardado local ----------
+let lib=[];try{lib=JSON.parse(localStorage.getItem('quizzn.lib'))||[]}catch{}
+const save=()=>{try{localStorage.setItem('quizzn.lib',JSON.stringify(lib))}catch{toast('No se pudo guardar: memoria llena (¿muchas imágenes?)')}};
+
+// ---------- compartir: el quiz viaja comprimido en el #hash del link (sin servidor) ----------
+const pack=async o=>{const s=new Blob([JSON.stringify(o)]).stream().pipeThrough(new CompressionStream('deflate-raw'));const u=new Uint8Array(await new Response(s).arrayBuffer());let b='';for(let i=0;i<u.length;i+=0x8000)b+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(b).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')};
+const unpack=async t=>{const u=Uint8Array.from(atob(t.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));return JSON.parse(await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text())};
+
+// ---------- editor: piezas comunes ----------
+const inp=(o,k,ph,tag='input')=>h(tag,{placeholder:ph,rows:2,value:o[k]??'',oninput:e=>{o[k]=e.target.value;save()}});
+const listEd=(arr,row,mk,min=1)=>{const box=h('div',{class:'list'});const draw=()=>box.replaceChildren(...arr.map((_,i)=>h('div',{class:'row'},row(i),arr.length>min?h('button',{class:'x',title:'Quitar',onclick:()=>{arr.splice(i,1);save();draw()}},'✕'):'')),h('button',{class:'add',onclick:()=>{arr.push(mk());save();draw()}},'+ Agregar'));draw();return box};
+const optEd=(q,multi)=>{const n='r'+uid();return listEd(q.opts,i=>{const o=q.opts[i];return[h('input',{type:multi?'checkbox':'radio',name:n,checked:!!o.ok,title:'Correcta',onchange:e=>{if(!multi)q.opts.forEach(x=>x.ok=false);o.ok=multi?e.target.checked:true;save()}}),inp(o,'t','Opción')]},()=>({t:'',ok:false}),2)};
+const shrink=async f=>{const b=await createImageBitmap(f),k=Math.min(1,640/b.width),c=h('canvas',{width:Math.round(b.width*k),height:Math.round(b.height*k)}),x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(b,0,0,c.width,c.height);return{img:c.toDataURL('image/jpeg',.7),ar:c.height/c.width}};
+
+// ---------- tipos de pregunta ----------
+// blank() = campos propios; edit(q) = editor; play(q) = {el,get,reveal?}; grade(q,resp) = 0..1 | null (sin calificar); key(q) = respuesta correcta
+const choice=(q,multi,poll)=>{const ord=shuf(q.opts.map((_,i)=>i)),sel=new Set(),L=ord.map(i=>h('label',{class:'opt'},h('input',{type:multi?'checkbox':'radio',name:'o',onchange:e=>{if(!multi)sel.clear();e.target.checked?sel.add(i):sel.delete(i)}}),q.opts[i].t));return{el:h('div',{class:'opts'},L),get:()=>[...sel].sort((a,b)=>a-b),reveal:()=>poll||L.forEach((l,k)=>{const o=q.opts[ord[k]];if(o.ok)l.classList.add('right');else if(sel.has(ord[k]))l.classList.add('wrong')})}};
+const okTxt=q=>q.opts.filter(o=>o.ok).map(o=>o.t).join(' · ');
+const BL=/\{\{(.*?)\}\}/g;
+const grid=(rows)=>h('div',{class:'grid2'},rows);
+const pt=(e,w)=>{const b=w.getBoundingClientRect();return{x:(e.clientX-b.left)/b.width,y:(e.clientY-b.top)/b.height}};
+const pins=q=>h('div',{class:'hs'},h('img',{src:q.img}),q.pts.map((p,i)=>h('i',{class:'pin',style:`left:${p.x*100}%;top:${p.y*100}%`},i+1)));
+const T={
+ mc:{name:'Opción múltiple (1 correcta)',blank:()=>({opts:[{t:'',ok:true},{t:'',ok:false}]}),edit:q=>optEd(q,0),play:q=>choice(q),grade:(q,a)=>a.length===1&&q.opts[a[0]]?.ok?1:0,key:q=>'Correcta: '+okTxt(q)},
+ multi:{name:'Casillas (varias correctas)',blank:()=>({opts:[{t:'',ok:true},{t:'',ok:true},{t:'',ok:false}]}),edit:q=>optEd(q,1),play:q=>choice(q,1),grade:(q,a)=>a.join()===q.opts.flatMap((o,i)=>o.ok?[i]:[]).join()?1:0,key:q=>'Correctas: '+okTxt(q)},
+ blank:{name:'Completar (texto)',blank:()=>({ans:['']}),edit:q=>[h('small',{},'Respuestas aceptadas (sin importar mayúsculas ni acentos)'),listEd(q.ans,i=>inp(q.ans,i,'Respuesta'),()=>'')],
+  play:q=>{const el=h('input',{placeholder:'Tu respuesta'});return{el,get:()=>el.value}},grade:(q,a)=>q.ans.some(x=>norm(x)&&norm(x)===norm(a))?1:0,key:q=>'Respuestas válidas: '+q.ans.join(' / ')},
+ poll:{name:'Encuesta (sin correcta)',blank:()=>({opts:[{t:''},{t:''}]}),edit:q=>listEd(q.opts,i=>inp(q.opts[i],'t','Opción'),()=>({t:''}),2),play:q=>choice(q,0,1),grade:()=>null},
+ open:{name:'Respuesta abierta',blank:()=>({model:''}),edit:q=>inp(q,'model','Respuesta modelo (opcional, se muestra al comprobar)','textarea'),
+  play:q=>{const el=h('textarea',{rows:4,placeholder:'Escribe tu respuesta'});return{el,get:()=>el.value}},grade:()=>null,key:q=>q.model&&'Respuesta modelo: '+q.model},
+ match:{name:'Relacionar',blank:()=>({pairs:[{a:'',b:''},{a:'',b:''}]}),edit:q=>listEd(q.pairs,i=>[inp(q.pairs[i],'a','Elemento'),'→',inp(q.pairs[i],'b','Se relaciona con')],()=>({a:'',b:''}),2),
+  play:q=>{const bs=shuf(q.pairs.map(p=>p.b)),S=q.pairs.map(()=>h('select',{},h('option',{value:''},'—'),bs.map(b=>h('option',{value:b},b))));return{el:grid(q.pairs.map((p,i)=>[h('span',{},p.a),S[i]])),get:()=>S.map(s=>s.value)}},
+  grade:(q,a)=>a.filter((b,i)=>b===q.pairs[i].b).length/a.length,key:q=>q.pairs.map(p=>p.a+' → '+p.b).join(' · ')},
+ order:{name:'Ordenar',blank:()=>({items:['','']}),edit:q=>[h('small',{},'Escríbelos en el orden correcto; al jugar salen mezclados'),listEd(q.items,i=>inp(q.items,i,'Elemento'),()=>'',2)],
+  play:q=>{let p=shuf(q.items.map((_,i)=>i));for(let k=0;k<9&&p.every((v,i)=>q.items[v]===q.items[i]);k++)p=shuf(p);const el=h('ol',{class:'ord'}),mv=(i,d)=>()=>{if(p[i+d]!==undefined){[p[i],p[i+d]]=[p[i+d],p[i]];draw()}},draw=()=>el.replaceChildren(...p.map((v,i)=>h('li',{},h('span',{},q.items[v]),btn('↑',mv(i,-1)),btn('↓',mv(i,1)))));draw();return{el,get:()=>p.map(v=>q.items[v])}},
+  grade:(q,a)=>a.every((x,i)=>x===q.items[i])?1:0,key:q=>q.items.join(' → ')},
+ blanks:{name:'Completar con opciones',blank:()=>({text:'La capital de Francia es {{París|Roma|Madrid}}.'}),edit:q=>[inp(q,'text','Texto con huecos','textarea'),h('small',{},'Cada hueco: {{correcta|distractor|distractor}}. La primera opción es la correcta; al jugar salen mezcladas.')],
+  play:q=>{const S=[],el=h('p',{class:'cloze'},q.text.split(/(\{\{.*?\}\})/).map(s=>{const m=s.match(/^\{\{(.*)\}\}$/);if(!m)return s;const sel=h('select',{},h('option',{value:''},'—'),shuf(m[1].split('|').map(x=>x.trim())).map(o=>h('option',{value:o},o)));S.push(sel);return sel}));return{el,get:()=>S.map(s=>s.value)}},
+  grade:(q,a)=>{const c=[...q.text.matchAll(BL)].map(m=>m[1].split('|')[0].trim());return c.length?a.filter((x,i)=>x===c[i]).length/c.length:null},key:q=>q.text.replace(BL,(_,s)=>'「'+s.split('|')[0].trim()+'」')},
+ drag:{name:'Arrastrar y soltar (banco de palabras)',blank:()=>({text:'El {{Sol}} es una {{estrella|galaxia}}.'}),edit:q=>[inp(q,'text','Texto con huecos','textarea'),h('small',{},'Cada hueco: {{respuesta}}. Opcional {{respuesta|distractor}}: los distractores se suman al banco de palabras.')],
+  // ponytail: toca palabra → va al primer hueco vacío; toca hueco → la devuelve. Arrastre real con el dedo si hace falta.
+  play:q=>{const o=[...q.text.matchAll(BL)].map(m=>m[1].split('|').map(x=>x.trim())),c=o.map(x=>x[0]),bank=shuf([...c,...new Set(o.flatMap(x=>x.slice(1)).filter(x=>!c.includes(x)))]),fill=c.map(()=>null);
+   const draw=()=>{H.forEach((b,i)=>{b.textContent=fill[i]==null?' ':bank[fill[i]];b.classList.toggle('f',fill[i]!=null)});B.forEach((b,j)=>b.hidden=fill.includes(j))};
+   const H=c.map((_,i)=>btn('',()=>{fill[i]=null;draw()},'Quitar','hole')),B=bank.map((t,j)=>btn(t,()=>{const i=fill.indexOf(null);if(i>=0){fill[i]=j;draw()}}));draw();
+   const get=()=>fill.map(j=>j==null?'':bank[j]);
+   return{el:h('div',{},h('p',{class:'cloze'},q.text.split(/\{\{.*?\}\}/).flatMap((s,i)=>i?[H[i-1],s]:[s])),h('div',{class:'bank'},B)),get,reveal:()=>get().forEach((t,i)=>H[i].classList.add(t===c[i]?'right':'wrong'))}},
+  grade:(q,a)=>T.blanks.grade(q,a),key:q=>T.blanks.key(q)},
+ category:{name:'Categorizar',blank:()=>({cats:[{name:'',items:[]},{name:'',items:[]}]}),edit:q=>listEd(q.cats,i=>{const c=q.cats[i];return[inp(c,'name','Categoría'),h('textarea',{rows:3,placeholder:'Un elemento por línea',value:c.items.join('\n'),oninput:e=>{c.items=e.target.value.split('\n').map(s=>s.trim()).filter(Boolean);save()}})]},()=>({name:'',items:[]}),2),
+  play:q=>{const flat=shuf(q.cats.flatMap(c=>c.items)),S=flat.map(()=>h('select',{},h('option',{value:-1},'—'),q.cats.map((c,i)=>h('option',{value:i},c.name))));return{el:grid(flat.map((t,i)=>[h('span',{},t),S[i]])),get:()=>flat.map((t,i)=>[t,+S[i].value])}},
+  grade:(q,a)=>a.length?a.filter(([t,c])=>q.cats[c]?.items.includes(t)).length/a.length:null,key:q=>q.cats.map(c=>c.name+': '+c.items.join(', ')).join(' | ')},
+ hotspot:{name:'Zona en imagen (tocar)',own:1,blank:()=>({x:.5,y:.5,r:.15}),
+  edit:q=>{if(!q.img)return h('small',{},'Sube una imagen y toca dónde está la respuesta.');const dot=h('i',{class:'dot'}),place=()=>dot.style.cssText=`left:${q.x*100}%;top:${q.y*100}%;width:${q.r*200}%`,w=h('div',{class:'hs',onclick:e=>{Object.assign(q,pt(e,w));place();save()}},h('img',{src:q.img}),dot);place();return[h('small',{},'Toca la imagen para colocar la zona correcta'),w,h('label',{class:'mut'},'Tamaño ',h('input',{type:'range',min:.03,max:.5,step:.01,value:q.r,oninput:e=>{q.r=+e.target.value;place();save()}}))]},
+  play:q=>{if(!q.img)return{el:h('small',{},'(esta pregunta no tiene imagen)'),get:()=>null};let a=null;const dot=h('i',{class:'dot pick'}),w=h('div',{class:'hs',onclick:e=>{a=pt(e,w);dot.style.cssText=`left:${a.x*100}%;top:${a.y*100}%`}},h('img',{src:q.img}),dot);return{el:w,get:()=>a,reveal:()=>w.append(h('i',{class:'dot ans',style:`left:${q.x*100}%;top:${q.y*100}%;width:${q.r*200}%`}))}},
+  grade:(q,a)=>a&&Math.hypot(a.x-q.x,(a.y-q.y)*q.ar)<=q.r?1:0,key:()=>'La zona correcta quedó marcada en verde.'},
+ label:{name:'Etiquetar imagen',own:1,blank:()=>({pts:[]}),
+  edit:q=>{if(!q.img)return h('small',{},'Sube una imagen y toca cada punto que quieras etiquetar.');const box=h('div'),draw=()=>{const w=pins(q);w.onclick=e=>{q.pts.push({...pt(e,w),t:''});save();draw()};box.replaceChildren(h('small',{},'Toca la imagen para agregar un punto y escribe su etiqueta'),w,h('div',{class:'list'},q.pts.map((p,i)=>h('div',{class:'row'},h('b',{class:'x'},i+1),inp(p,'t','Etiqueta'),h('button',{class:'x',title:'Quitar',onclick:()=>{q.pts.splice(i,1);save();draw()}},'✕')))))};draw();return box},
+  play:q=>{if(!q.img)return{el:h('small',{},'(esta pregunta no tiene imagen)'),get:()=>[]};const ls=shuf([...new Set(q.pts.map(p=>p.t))]),S=q.pts.map(()=>h('select',{},h('option',{value:''},'—'),ls.map(t=>h('option',{value:t},t))));return{el:h('div',{},pins(q),grid(q.pts.map((p,i)=>[h('b',{},'Punto '+(i+1)),S[i]]))),get:()=>S.map(s=>s.value),reveal:()=>S.forEach((s,i)=>s.classList.add(s.value===q.pts[i].t?'right':'wrong'))}},
+  grade:(q,a)=>q.pts.length?a.filter((t,i)=>t===q.pts[i].t).length/q.pts.length:null,key:q=>q.pts.map((p,i)=>(i+1)+' = '+p.t).join(' · ')},
+ draw:{name:'Dibujo (sin calificar)',own:1,blank:()=>({model:''}),edit:q=>[h('small',{},'La imagen (opcional) sirve de fondo para dibujar encima.'),inp(q,'model','Qué se esperaba (se muestra al comprobar)')],
+  play:q=>{const c=h('canvas',{width:600,height:400,class:'cv'}),x=c.getContext('2d');let on=0;if(q.img)c.style.backgroundImage=`url("${q.img}")`;x.lineWidth=3;x.lineCap='round';x.strokeStyle='#111';const p=e=>{const b=c.getBoundingClientRect();return[(e.clientX-b.left)*600/b.width,(e.clientY-b.top)*400/b.height]};c.onpointerdown=e=>{on=1;c.setPointerCapture(e.pointerId);x.beginPath();x.moveTo(...p(e))};c.onpointermove=e=>{if(on){x.lineTo(...p(e));x.stroke()}};c.onpointerup=()=>on=0;return{el:h('div',{},c,btn('Borrar',()=>x.clearRect(0,0,600,400))),get:()=>null}},
+  grade:()=>null,key:q=>q.model&&'Se esperaba: '+q.model},
+ info:{name:'Texto / diapositiva',blank:()=>({}),edit:()=>'',grade:()=>null}
+};
+
+// ---------- importar ----------
+const clean=o=>{if(!o||!Array.isArray(o.qs))throw Error('Falta "qs" (lista de preguntas)');return{id:uid(),title:String(o.title||'Sin título'),qs:o.qs.map(q=>{const t=T[q.t]?q.t:'mc',r=Object.assign({q:'',img:'',exp:'',ar:1},T[t].blank(),q,{t});if(Array.isArray(r.opts))r.opts=r.opts.map(x=>typeof x==='string'?{t:x}:x);return r})}};
+const parseAny=async txt=>{const m=txt.match(/#q=([\w-]+)/);return clean(m?await unpack(m[1]):JSON.parse(txt))};
+const AI_PROMPT=`Eres un generador de quizzes para la app Quizz'n. Responde SOLO con un JSON válido (sin texto extra ni bloques de código) con esta forma:
+{"title":"...","qs":[ ...preguntas... ]}
+Cada pregunta lleva "t" (tipo), "q" (enunciado), opcional "exp" (explicación que se muestra al responder) y los campos de su tipo:
+- mc (opción múltiple, UNA correcta; verdadero/falso = mc con 2 opciones): "opts":[{"t":"texto","ok":true},{"t":"texto"}]
+- multi (varias correctas): igual que mc con varios "ok":true
+- blank (completar texto): "ans":["respuesta","otra forma aceptada"]
+- poll (encuesta, sin correcta): "opts":[{"t":"texto"}]
+- open (abierta, sin calificar): "model":"respuesta modelo"
+- match (relacionar): "pairs":[{"a":"izquierda","b":"derecha"}]
+- order (ordenar): "items":["primero","segundo","tercero"] (ya en el orden correcto)
+- blanks (huecos con desplegable): "text":"El {{correcta|falsa1|falsa2}} ..." (la primera opción de cada hueco es la correcta)
+- drag (arrastrar al hueco desde un banco de palabras): "text":"El {{respuesta}} y la {{respuesta|distractor}} ..." (los distractores se suman al banco)
+- category (categorizar): "cats":[{"name":"Cat A","items":["x","y"]},{"name":"Cat B","items":["z"]}]
+- info (diapositiva informativa): solo "q"
+No uses hotspot, label ni draw (necesitan imagen). Mezcla tipos y mantén las preguntas claras.
+Genera N preguntas sobre: <TEMA o pega aquí tus apuntes>`;
+const SVG=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200"><rect width="400" height="200" fill="#dbe7f5"/><rect x="40" y="60" width="90" height="90" fill="#3a6ea5"/><circle cx="300" cy="100" r="40" fill="#e63946"/></svg>`;
+const SAMPLE={title:'Demo: todos los formatos',qs:[
+ {t:'info',q:"Bienvenido a Quizz'n 👋 Este quiz muestra cada formato de pregunta. Edítalo, duplícalo o bórralo."},
+ {t:'mc',q:'¿Qué estructura de datos funciona como LIFO?',opts:[{t:'Pila',ok:true},{t:'Cola'},{t:'Árbol'}],exp:'LIFO = el último en entrar es el primero en salir.'},
+ {t:'multi',q:'Marca los lenguajes de programación',opts:[{t:'Python',ok:true},{t:'HTML'},{t:'Rust',ok:true},{t:'JavaScript',ok:true}]},
+ {t:'blank',q:'El protocolo seguro de la web se llama (siglas):',ans:['HTTPS']},
+ {t:'poll',q:'¿Cómo prefieres estudiar?',opts:[{t:'Solo'},{t:'En grupo'},{t:'Con música'}]},
+ {t:'open',q:'Explica con tus palabras qué es una API.',model:'Una interfaz que permite que dos programas se comuniquen.'},
+ {t:'match',q:'Relaciona cada tecnología con su uso',pairs:[{a:'HTML',b:'Estructura'},{a:'CSS',b:'Estilos'},{a:'SQL',b:'Bases de datos'}]},
+ {t:'order',q:'Ordena de menor a mayor',items:['Bit','Byte','Kilobyte','Megabyte']},
+ {t:'blanks',q:'Completa',text:'En {{Git|Excel|Docker}}, un {{commit|pixel|array}} guarda un cambio.'},
+ {t:'drag',q:'Arrastra (toca) las palabras a su hueco',text:'HTML da la {{estructura|lógica}} y CSS da el {{estilo|servidor}}.'},
+ {t:'category',q:'Clasifica',cats:[{name:'Frontend',items:['HTML','CSS','React']},{name:'Backend',items:['Node','Django','Flask']}]},
+ {t:'hotspot',q:'Toca el círculo rojo',img:'data:image/svg+xml;utf8,'+encodeURIComponent(SVG),ar:.5,x:.75,y:.5,r:.12},
+ {t:'label',q:'Etiqueta cada figura',img:'data:image/svg+xml;utf8,'+encodeURIComponent(SVG),ar:.5,pts:[{x:.21,y:.52,t:'Cuadrado'},{x:.75,y:.5,t:'Círculo'}]},
+ {t:'draw',q:'Dibuja un círculo',model:'Un círculo cerrado'}]};
+
+// ---------- pantallas ----------
+const app=$('#app');
+const show=(...n)=>{app.replaceChildren(...n);scrollTo(0,0)};
+const hdr=(...x)=>h('div',{class:'top'},h('button',{class:'brand',onclick:home},"Quizz'n"),h('div',{class:'btns'},x));
+const add=qz=>{lib.unshift(qz);save();return qz};
+
+function home(){
+ show(hdr(),h('h2',{},'Mis quizzes'),
+  lib.length?h('div',{class:'cards'},lib.map(qz=>h('div',{class:'card'},h('b',{},qz.title),h('small',{},qz.qs.length+' preguntas'),h('div',{class:'btns'},btn('▶ Jugar',()=>play(qz),'','primary'),btn('✎ Editar',()=>edit(qz)),btn('🔗 Compartir',()=>share(qz)),btn('🗑',()=>{if(confirm('¿Borrar "'+qz.title+'"?')){lib=lib.filter(x=>x!==qz);save();home()}},'Borrar'))))):h('p',{class:'mut'},'Aún no tienes quizzes. Crea uno, importa uno que te compartieron o prueba el ejemplo.'),
+  h('div',{class:'btns'},btn('+ Nuevo quiz',()=>edit(add({id:uid(),title:'Nuevo quiz',qs:[Object.assign({t:'mc',q:'',img:'',exp:'',ar:1},T.mc.blank())]})),'','primary'),btn('⇪ Importar',importView),btn('Cargar ejemplo',()=>{add(clean(SAMPLE));home()}),btn('🤖 Copiar prompt para IA',async()=>{(await copy(AI_PROMPT))?toast('Prompt copiado: pégalo en tu IA y luego usa Importar'):prompt('Copia esto:',AI_PROMPT)})))}
+
+function importView(){
+ const ta=h('textarea',{rows:8,placeholder:'Pega aquí el JSON o un link de Quizz\'n…'});
+ const go=async txt=>{try{const qz=add(await parseAny(txt));toast('Importado: '+qz.title);home()}catch(e){toast('No se pudo importar: '+e.message)}};
+ show(hdr(),h('h2',{},'Importar quiz'),ta,h('div',{class:'btns'},btn('Importar',()=>go(ta.value),'','primary'),h('label',{class:'btn'},'Elegir archivo…',h('input',{type:'file',accept:'.json,application/json',hidden:true,onchange:async e=>e.target.files[0]&&go(await e.target.files[0].text())}))))}
+
+function edit(qz){
+ const box=h('div'),draw=()=>box.replaceChildren(...qz.qs.map((_,i)=>qCard(qz,i,draw)),h('div',{class:'btns'},addSel(qz,draw),btn('Verdadero / Falso',()=>{qz.qs.push({t:'mc',q:'',img:'',exp:'',ar:1,opts:[{t:'Verdadero',ok:true},{t:'Falso',ok:false}]});save();draw()})));
+ draw();
+ show(hdr(btn('▶ Jugar',()=>play(qz)),btn('🔗 Compartir',()=>share(qz)),btn('Listo',home,'','primary')),inp(qz,'title','Título del quiz'),box)}
+function addSel(qz,draw){const s=h('select',{},Object.entries(T).map(([k,v])=>h('option',{value:k},v.name)));return h('div',{class:'row'},s,btn('+ Pregunta',()=>{qz.qs.push(Object.assign({t:s.value,q:'',img:'',exp:'',ar:1},T[s.value].blank()));save();draw()}))}
+function qCard(qz,i,draw){
+ const q=qz.qs[i],t=T[q.t],mv=d=>()=>{const j=i+d;if(qz.qs[j]){[qz.qs[i],qz.qs[j]]=[qz.qs[j],qz.qs[i]];save();draw()}};
+ const sel=h('select',{onchange:e=>{qz.qs[i]=Object.assign({t:e.target.value,q:q.q,img:q.img,ar:q.ar,exp:q.exp},T[e.target.value].blank());save();draw()}},Object.entries(T).map(([k,v])=>h('option',{value:k},v.name)));sel.value=q.t;
+ return h('section',{class:'card q'},
+  h('div',{class:'qh'},h('b',{},'#'+(i+1)),sel,btn('↑',mv(-1),'Subir'),btn('↓',mv(1),'Bajar'),btn('⧉',()=>{qz.qs.splice(i+1,0,structuredClone(q));save();draw()},'Duplicar'),btn('🗑',()=>{qz.qs.splice(i,1);save();draw()},'Borrar')),
+  inp(q,'q',q.t==='info'?'Texto':'Pregunta','textarea'),
+  h('div',{},q.img?h('img',{class:'thumb',src:q.img}):'',h('label',{class:'btn'},q.img?'Cambiar imagen':'+ Imagen',h('input',{type:'file',accept:'image/*',hidden:true,onchange:async e=>{if(e.target.files[0]){Object.assign(q,await shrink(e.target.files[0]));save();draw()}}})),q.img?btn('Quitar',()=>{q.img='';save();draw()}):''),
+  t.edit(q),
+  q.t==='info'?'':inp(q,'exp','Explicación al responder (opcional)'))}
+
+function play(qz,from){
+ const qs=qz.qs,res=[];let i=0;
+ const step=()=>{
+  if(i>=qs.length)return end();
+  const q=qs[i],t=T[q.t],p=t.play&&t.play(q),fb=h('div',{class:'fb'});
+  const main=btn(p?'Comprobar':'Continuar',()=>{
+   if(!p||main.dataset.done){i++;return step()}
+   const a=p.get(),s=t.grade(q,a);res.push({q,s});
+   p.el.classList.add('locked');p.el.querySelectorAll('input,select,textarea,button').forEach(x=>x.disabled=true);p.reveal&&p.reveal();
+   const k=s!==1&&t.key&&t.key(q);
+   fb.replaceChildren(h('b',{class:s==null?'':s===1?'ok':s===0?'bad':'part'},s==null?'Respuesta registrada':s===1?'¡Correcto!':s===0?'Incorrecto':'Parcial · '+Math.round(s*100)+'%'),k?h('div',{},k):'',q.exp?h('div',{class:'mut'},q.exp):'');
+   main.dataset.done=1;main.textContent=i+1<qs.length?'Siguiente →':'Ver resultados';
+  },'','primary');
+  show(hdr(),h('div',{class:'bar'},h('i',{style:`width:${100*i/qs.length}%`})),h('small',{},`${i+1} / ${qs.length}`),
+   h('div',{class:'card'},h('h2',{},q.q),q.img&&!t.own?h('img',{class:'qimg',src:q.img}):'',p?p.el:'',fb),main)};
+ const end=()=>{
+  const sc=res.filter(r=>r.s!=null),tot=sc.reduce((a,r)=>a+r.s,0);
+  show(hdr(),h('div',{class:'card'},h('h2',{},sc.length?`${+tot.toFixed(1)} / ${sc.length}`:'¡Listo!'),sc.length?h('p',{},Math.round(100*tot/sc.length)+'% de aciertos'):'',
+   res.map(r=>h('div',{class:'res'},r.s==null?'•':r.s===1?'✅':r.s===0?'❌':'◐',h('span',{},r.q.q)))),
+   h('div',{class:'btns'},btn('↻ Repetir',()=>play(qz,from),'','primary'),from==='link'?btn('Guardar en mis quizzes',()=>{add(qz);toast('Guardado');home()}):'',btn('Inicio',home)))};
+ step()}
+
+async function share(qz){
+ const link=location.href.split('#')[0]+'#q='+await pack({title:qz.title,qs:qz.qs}),kb=Math.round(link.length/1024);
+ const file=()=>{const a=h('a',{href:URL.createObjectURL(new Blob([JSON.stringify({title:qz.title,qs:qz.qs})],{type:'application/json'})),download:(qz.title.replace(/\W+/g,'-').toLowerCase()||'quiz')+'.quizzn.json'});a.click()};
+ show(hdr(),h('h2',{},'Compartir "'+qz.title+'"'),
+  h('p',{},'Cualquiera con el link juega el quiz sin instalar nada y puede guardarlo.'),
+  h('textarea',{rows:4,readonly:'',value:link,onfocus:e=>e.target.select()}),
+  h('small',{class:'mut'},`Link de ${kb} KB. `+(link.length>6000?'Es largo (imágenes): algunos chats lo cortan; mejor comparte también el archivo. ':'')+(location.protocol==='file:'?'⚠ Estás abriendo Quizz\'n desde un archivo: el link solo funciona si la app está publicada en una web. Mientras tanto comparte el archivo.':'')),
+  h('div',{class:'btns'},btn('Copiar link',async()=>toast(await copy(link)?'Link copiado':'Copia el link a mano'),'','primary'),navigator.share?btn('Compartir…',()=>navigator.share({title:qz.title,url:link}).catch(()=>{})):'',btn('⬇ Descargar archivo',file),btn('Volver',home)))}
+
+async function boot(){
+ const m=location.hash.match(/^#q=([\w-]+)/);
+ if(m)try{const qz=clean(await unpack(m[1]));return show(hdr(),h('div',{class:'card'},h('h2',{},qz.title),h('p',{class:'mut'},qz.qs.length+' preguntas'),h('div',{class:'btns'},btn('▶ Empezar',()=>play(qz,'link'),'','primary'),btn('Guardar en mis quizzes',()=>{add(qz);toast('Guardado');home()}))))}catch{toast('Link inválido o incompleto')}
+ home()}
+
+// ---------- autocomprobación: abre la página con ?test ----------
+async function selfTest(){
+ const eq=(a,b,m)=>{if(JSON.stringify(a)!==JSON.stringify(b))throw Error(`${m}: ${JSON.stringify(a)} != ${JSON.stringify(b)}`)};
+ const g=(t,q,a)=>T[t].grade(Object.assign(T[t].blank(),{ar:1},q),a);
+ eq(g('mc',{opts:[{t:'a',ok:true},{t:'b'}]},[0]),1,'mc ok');eq(g('mc',{opts:[{t:'a',ok:true},{t:'b'}]},[1]),0,'mc mal');
+ eq(g('multi',{opts:[{t:'a',ok:true},{t:'b'},{t:'c',ok:true}]},[0,2]),1,'multi');eq(g('multi',{opts:[{t:'a',ok:true},{t:'b'}]},[0,1]),0,'multi extra');
+ eq(g('blank',{ans:['París']},' paris '),1,'blank acentos');eq(g('blank',{ans:['']},''),0,'blank vacío no acierta');
+ eq(g('match',{pairs:[{a:1,b:'x'},{a:2,b:'y'}]},['x','z']),.5,'match parcial');
+ eq(g('order',{items:['a','b']},['a','b']),1,'order');eq(g('order',{items:['a','b']},['b','a']),0,'order mal');
+ eq(g('blanks',{text:'{{a|b}} y {{c|d}}'},['a','d']),.5,'blanks');eq(g('blanks',{text:'sin huecos'},[]),null,'blanks 0');
+ eq(g('category',{cats:[{name:'A',items:['x']},{name:'B',items:['y']}]},[['x',0],['y',0]]),.5,'category');
+ eq(g('hotspot',{x:.5,y:.5,r:.1,ar:.5},{x:.55,y:.5}),1,'hotspot dentro');eq(g('hotspot',{x:.5,y:.5,r:.1,ar:.5},{x:.8,y:.5}),0,'hotspot fuera');eq(g('hotspot',{},null),0,'hotspot nada');
+ eq(g('poll',{},[0]),null,'poll');
+ eq(g('drag',{text:'{{a}} y {{b|z}}'},['a','z']),.5,'drag');
+ eq(g('label',{pts:[{t:'A'},{t:'B'}]},['A','A']),.5,'label');eq(g('label',{},[]),null,'label vacío');
+ const r=await unpack(await pack(SAMPLE));eq(r,SAMPLE,'pack/unpack');
+ const c=clean({qs:[{t:'mc',q:'x',opts:['a','b']},{t:'raro'}]});eq(c.qs[0].opts[0].t,'a','clean opts string');eq(c.qs[1].t,'mc','clean tipo desconocido');
+ for(const k in T){const q=Object.assign({q:'x',img:'',ar:1},T[k].blank());T[k].edit(q);const p=T[k].play&&T[k].play(q);if(p){const a=p.get();T[k].grade(q,a);p.reveal&&p.reveal()}}
+ document.title='TEST OK'}
+if(location.search.includes('test'))selfTest().catch(e=>{document.title='TEST FAIL: '+e.message;console.error(e)});
+boot();
+</script>
+</body>
+</html>
