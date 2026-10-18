@@ -1,6 +1,6 @@
 # Quizz'n — Overlay sobre juegos (2026-10-18)
 
-Estado: **Windows construido y probado** ([windows/Program.cs](windows/Program.cs)). Android: pendiente.
+Estado: **Windows publicado** — [Release v0.1.0](https://github.com/Alex-Alas/quizzn/releases/tag/v0.1.0) ([windows/Program.cs](windows/Program.cs)). Android: pendiente.
 
 ## Decisiones (elegidas por Alex)
 
@@ -27,6 +27,7 @@ Defaults (se cambian en la tarjeta "🎮 Pausas de estudio" de la app): cada 20 
 
 - **La biblioteca de la app es aparte de la del navegador.** Para pasar un quiz: 🔗 Compartir en el navegador → en la app ⇪ Importar → pegar el link.
 - Necesita internet (carga la web publicada). Si la web no carga, la pausa no aparece: nunca tapa el juego con una ventana rota.
+- Tras subir cambios a la web, la app puede tardar hasta ~10 min en verlos (caché de GitHub Pages) o hasta reiniciarla.
 - Juegos que no se pausan con Esc siguen corriendo. Los que están en pantalla completa exclusiva se minimizan al perder el foco (eso también los pausa).
 - Algunos anti-cheat (p. ej. Vanguard) pueden ignorar el Esc simulado; si molesta, se apaga en los ajustes. No se toca la memoria ni los gráficos del juego.
 - El `.exe` no está firmado: Windows SmartScreen avisa la primera vez (Más información → Ejecutar de todas formas).
