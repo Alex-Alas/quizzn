@@ -1,6 +1,6 @@
 # Quizz'n — Overlay sobre juegos (2026-10-18)
 
-Estado: **Windows publicado** — [Release v0.1.0](https://github.com/Alex-Alas/quizzn/releases/tag/v0.1.0) ([windows/Program.cs](windows/Program.cs)). Android: pendiente.
+Estado: **Windows y Android publicados** — [Release v0.2.0](https://github.com/Alex-Alas/quizzn/releases/tag/v0.2.0) ([windows/Program.cs](windows/Program.cs), [android/…/Quizzn.kt](android/src/main/kotlin/io/github/alexalas/quizzn/Quizzn.kt)).
 
 ## Decisiones (elegidas por Alex)
 
@@ -43,6 +43,40 @@ cd windows && dotnet build -c Release
 - Web: `index.html?test` cubre la regla de la pausa; `index.html?overlay` abre una pausa en el navegador.
 - Probado (2026-10-18) con una ventana "juego falso" que cuenta los Esc: el atajo abre la pausa, el juego recibe Esc, la ventana queda encima de todo y en pantalla completa, Alt+F4 no la cierra, al terminar el foco vuelve al juego, "Probar ahora" regresa a la ventana normal, una segunda instancia solo muestra un aviso, y con la web vieja publicada el atajo no hace nada.
 
-## Siguiente: Android
+## Android (2026-10-18)
 
-App nativa mínima (Kotlin) con permiso "Mostrar sobre otras apps" + servicio en primer plano con el temporizador + un WebView con la misma web encima de todo. La web necesita un adaptador para que `tell()` hable con Android (`window.QuizznHost`) además de `chrome.webview`. En Android no hay Esc: el juego queda tapado, pero sigue corriendo si no se pausa solo.
+| # | Decisión | Por qué |
+|---|----------|---------|
+| 7 | App **Kotlin nativa sin dependencias** (Activity, Service, WebView del sistema) | APK de ~30 KB; se reparte por el Release de GitHub |
+| 8 | La pausa es una **pantalla completa (BreakActivity)** que se abre encima del juego, no una ventana flotante | Con una Activity funcionan los desplegables `<select>`, el teclado y el botón Atrás; y el juego pasa a segundo plano, así que casi todos se pausan solos |
+| 9 | Se usa el permiso **"Mostrar sobre otras apps"** | Es lo que deja abrir la pausa encima de otra app; en Android 15+ además se pone un punto invisible de 1 px justo antes de abrirla (regla nueva de Android) |
+| 10 | Salir de la pausa con Inicio o Recientes sin terminar → **vuelve en 1 minuto** | En Android no se puede bloquear el botón Inicio; esto lo hace "obligatorio" sin trucos |
+| 11 | Salida de emergencia: botón **"Detener"** en la notificación | Igual que "Salir" en la bandeja de Windows; se reactiva al abrir Quizz'n |
+
+Cómo funciona: un servicio en primer plano (notificación "Pausas de estudio activas") cuenta los minutos; al cumplirse abre `BreakActivity` con la web en `?overlay`. Con la pantalla apagada o bloqueada espera y reintenta cada minuto. Atrás no cierra la pausa. Si la web no carga (sin internet o versión vieja), la pausa se cierra sola. La web reconoce Android por `window.QuizznHost` y oculta la opción de Esc y el atajo de teclado.
+
+Limitaciones en Android:
+
+- Instalar el APK pide permitir "apps desconocidas" (no está en Play Store). Al abrir la app pide "Mostrar sobre otras apps" y notificaciones.
+- Dentro de la app no funcionan "Elegir archivo…" (imágenes e importar archivo) ni "⬇ Descargar archivo": para crear quizzes con imágenes, usa la web en Chrome y luego importa el link.
+- El APK va firmado con la llave debug de la PC de Alex (`signingConfig` en `android/build.gradle.kts`): las actualizaciones tienen que compilarse en esa PC. Para Play Store hace falta una llave propia.
+- Los juegos siguen corriendo debajo si no se pausan solos al pasar a segundo plano.
+
+Compilar (en esta PC Java necesita una carpeta temporal corta para sus sockets; en Android Studio no hace falta):
+
+```bash
+cd android && JAVA_TOOL_OPTIONS="-Djdk.net.unixdomain.tmpdir=C:/Users/alexa_qd9haq2/.gradle/tmp" ./gradlew assembleRelease
+```
+
+El APK queda en `android/build/outputs/apk/release/quizzn-release.apk`.
+
+Probado (2026-10-18) en un emulador con Android 16 y la web publicada:
+- el permiso abre la pantalla correcta del sistema;
+- servicio y notificación activos;
+- la pausa sale sola a los 60 s y a los 122 s encima de otra app;
+- Atrás no la cierra, y se responde con toques;
+- "Volver al juego" regresa a la app de antes;
+- salir con Inicio la trae de vuelta a los 63 s;
+- "Detener" apaga el servicio y no salen más pausas;
+- el APK de release (minificado) funciona con "Probar ahora";
+- la barra de estado y el teclado ya no tapan el contenido.

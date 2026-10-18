@@ -35,14 +35,15 @@ Alex pidió además modo `ponytail` (la solución más simple que funcione): sin
 
 1. Probar el link de compartir desde un teléfono real con las imágenes del quiz.
 2. Que Alex lo use con su hermano y compañeros y anote qué formato falta o estorba. Candidatos ya identificados, sin hacer: arrastrar y soltar con el dedo (hoy ordenar usa ↑↓ y relacionar/categorizar usan desplegables), etiquetar imagen con varios puntos, tiempo por pregunta, audio/video, modo en vivo.
-3. **Overlay Windows hecho** (ver `overlay.md`): app C# + WebView2 en `windows/`, pausa cada N min o Ctrl+Alt+Q, Esc al juego, acertar N, salto ganado con aciertos. Sigue: Android (plan en `overlay.md`) y luego licencia/plugins (preguntas abiertas en `idea.md`).
+3. **Overlay Windows hecho** (ver `overlay.md`): app C# + WebView2 en `windows/`, pausa cada N min o Ctrl+Alt+Q, Esc al juego, acertar N, salto ganado con aciertos. **Android hecho** (Kotlin nativo, Release v0.2.0). Sigue: probar con amigos en teléfonos reales y luego licencia/plugins (preguntas abiertas en `idea.md`).
 4. Documentar cada decisión en `.md` y planear qué se graba en video desde el día 0.
 
 ## Archivos
 
 - `index.html` — la app (código de arriba).
 - `mvp.md` — decisiones y alcance del MVP.
-- `overlay.md` — decisiones del overlay sobre juegos (Windows hecho, Android pendiente).
+- `overlay.md` — decisiones del overlay sobre juegos (Windows y Android hechos).
+- `android/` — app de Android (Kotlin, sin dependencias). APK en `android/build/outputs/apk/release/`.
 - `windows/` — app de Windows (C# + WebView2). Zip para repartir: `windows/bin/Quizzn-windows.zip` (no va al repo).
 - `idea.md` — idea original y preguntas abiertas (no está en esta carpeta).
 

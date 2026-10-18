@@ -1,3 +1,6 @@
 .claude/
 windows/bin/
 windows/obj/
+android/.gradle/
+android/build/
+android/local.properties
